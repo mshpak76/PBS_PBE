@@ -1,0 +1,132 @@
+// independent origin of beneficial mutations with the same selection coefficients in all three populations
+// symmetric migration Nm=1 between demes, so that mutant alleles originating in deme i can increase in frequency in deme j
+// each mutation is neutral in the other demes - avoid clonal interference
+
+initialize() {
+ initializeTreeSeq();
+ initializeMutationRate(0);
+ //initializeMutationRate(1.22e-8);
+ //initializeMutationType("m1",1.0, "f", 0.0);
+ initializeMutationType("m2", 1.0, "f", 0.025);
+ initializeMutationType("m3", 1.0, "f", 0.025);
+ initializeMutationType("m4", 1.0, "f", 0.025);
+ initializeGenomicElementType("g1", c(m2,m3,m4), c(1.0,1.0,1.0));
+ initializeGenomicElement(g1, 0, 99999);
+ initializeRecombinationRate(7.04e-8);
+ initializeGeneConversion(0.838, 100, 1.0);
+}
+
+1 early() {defineConstant("simID", getSeed());}
+1 early() { sim.addSubpop("p1", 2e+4); }
+1 early() { 
+sim.addSubpopSplit("p2", 5e+3, p1);
+p1.setMigrationRates(p2, 5e-5);
+p2.setMigrationRates(p1, 2e-4); 
+}
+
+// mutations neutral except in population of origin
+// THIS IS A DIFFERENT SCENARIO FROM TRUE PARALLEL SWEEPS
+fitness(m4, p1) { return 1.0; }
+fitness(m4, p2) { return 1.0; } 
+fitness(m3, p1) { return 1.0; }
+fitness(m3, p3) { return 1.0; }
+fitness(m2, p2) { return 1.0; }
+fitness(m2, p3) { return 1.0; }
+
+3500 early() {
+sim.treeSeqOutput("restart_slim_" + simID + ".txt"); 
+sim.addSubpopSplit("p3", 1e+4, p2);
+p2.setSubpopulationSize(1e+4);
+//p1.setMigrationRates(c(p2,p3), c(5e-4,5e-4));
+//p2.setMigrationRates(c(p1,p3), c(1e-3,1e-3));
+//p3.setMigrationRates(c(p1,p2), c(1e-3,1e-3));
+p1.setMigrationRates(p2, 5e-5);
+p1.setMigrationRates(p3, 5e-5);
+p2.setMigrationRates(p1, 1e-4);
+p2.setMigrationRates(p3, 1e-4);
+p3.setMigrationRates(p2, 1e-4);
+p3.setMigrationRates(p1, 1e-4);
+}
+
+// mutations with selective sweeps in all three subpopulations
+3500 late() {
+ //sim.outputFull("restart_slim_" + simID + ".txt");
+ sim.treeSeqOutput("restart_slim_" + simID + ".txt");
+ x1 = rdunif(1,0,99999);
+ target1 = sample(p1.genomes, 10, replace=F);
+ target1.addNewDrawnMutation(m2, x1);
+ x2 = rdunif(1,0,99999);
+ target2 = sample(p2.genomes, 10, replace=F);
+ target2.addNewDrawnMutation(m3, x2);
+ x3 = rdunif(1,0,99999);
+ target3 = sample(p3.genomes, 10, replace=F);
+ target3.addNewDrawnMutation(m4, x3);
+}
+
+3501:4998 late() {
+ //print("test");
+ m2mut = sim.mutationsOfType(m2);
+ m3mut = sim.mutationsOfType(m3);
+ m4mut = sim.mutationsOfType(m4);
+ freq1 = sim.mutationFrequencies(p1,m2mut);
+ freq2 = sim.mutationFrequencies(p2,m3mut);
+ freq3 = sim.mutationFrequencies(p3,m4mut);
+ //print(freqs);
+ //tally = sum(sim.substitutions.mutationType == m2);
+ //print("freq1 = ");
+ //print(size(freq1));
+ //print("freq2 = ");
+ //print(size(freq2));
+ //print("freq3 = ");
+ //print(size(freq3));
+ if(size(freq1) < 1 | size(freq2) < 1 | size(freq3) < 1){
+   //print("lost");
+   sim.readFromPopulationFile("restart_slim_" + simID + ".txt");
+   setSeed(rdunif(1, 0, asInteger(2^62) - 1));
+   x1 = rdunif(1,0,99999);
+   target1 = sample(p1.genomes, 10, replace=F);
+   target1.addNewDrawnMutation(m2, x1);
+   x2 = rdunif(1,0,99999);
+   target2 = sample(p2.genomes, 10, replace=F);
+   target2.addNewDrawnMutation(m3, x2);
+   x3 = rdunif(1,0,99999);
+   target3 = sample(p3.genomes, 10, replace=F);
+   target3.addNewDrawnMutation(m4, x3);
+ }	
+}
+
+4999 late() {
+ m2mut = sim.mutationsOfType(m2);
+ m3mut = sim.mutationsOfType(m3);
+ m4mut = sim.mutationsOfType(m4);
+ freq1 = sim.mutationFrequencies(p1,m2mut);
+ freq2 = sim.mutationFrequencies(p2,m3mut);
+ freq3 = sim.mutationFrequencies(p3,m4mut);
+ print(freq1);
+//print(size(freq1));
+ print(freq2);
+//print(size(freq2));
+ print(freq3);
+//print(size(freq3));
+ print("next");
+ if(freq1 < 0.95 | freq2 < 0.95 | freq3 < 0.95){
+   sim.readFromPopulationFile("restart_slim_" + simID + ".txt");
+   setSeed(rdunif(1, 0, asInteger(2^62) - 1));
+   x1 = rdunif(1,0,99999);
+   target1 = sample(p1.genomes, 10, replace=F);
+   target1.addNewDrawnMutation(m2, x1);
+   x2 = rdunif(1,0,99999);
+   target2 = sample(p2.genomes, 10, replace=F);
+   target2.addNewDrawnMutation(m3, x2);
+   x3 = rdunif(1,0,99999);
+   target3 = sample(p3.genomes, 10, replace=F);
+   target3.addNewDrawnMutation(m4, x3);
+ }
+}
+
+5000 late()
+{
+  sim.deregisterScriptBlock(self);
+  sim.treeSeqOutput("ThreePopFixMigration.trees");
+  sim.simulationFinished();
+}

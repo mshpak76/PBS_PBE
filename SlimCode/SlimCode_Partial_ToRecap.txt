@@ -1,0 +1,79 @@
+// the same as SlimCode_Fixed_ToRecap.txt but with partial sweep, i.e. terminal freqeuncy < 1.0
+// runs to terminal frequencies in ranges 0.45-0.55, 0.75-0.85
+
+initialize() {
+ initializeTreeSeq();
+ initializeMutationRate(0);
+ //initializeMutationRate(1.22e-8);
+ //initializeMutationType("m1",1.0, "f", 0.0);
+ // 0.0125 or 0.015 for 80%, 0.0075 for 50%?
+ initializeMutationType("m2", 1.0, "f", 0.0075);
+ initializeGenomicElementType("g1", m2, 1.0);
+ initializeGenomicElement(g1, 0, 99999);
+ initializeRecombinationRate(7.04e-8);
+ initializeGeneConversion(0.838, 100, 1.0);
+}
+
+1 early() {defineConstant("simID", getSeed());}
+1 early() { sim.addSubpop("p1", 2e+4); }
+1 early() { sim.addSubpopSplit("p2", 5e+3, p1); }
+
+1000 early() {
+sim.treeSeqOutput("restart_slim_" + simID + ".txt"); 
+sim.addSubpopSplit("p3", 1e+4, p2);
+p2.setSubpopulationSize(1e+4);
+}
+
+1000 late() {
+ //sim.outputFull("restart_slim_" + simID + ".txt");
+ sim.treeSeqOutput("restart_slim_" + simID + ".txt");
+ x = rdunif(1,0,99999);
+ target = sample(p3.genomes, 1, replace=F);
+ target.addNewDrawnMutation(m2, x);
+}
+
+1001:1998 late() {
+ m2mut = sim.mutationsOfType(m2);
+ freqs = sim.mutationFrequencies(p3, m2mut);
+ //print(freqs);
+ //tally = sum(sim.substitutions.mutationType == m2);
+ if(size(freqs) == 0){
+   //print("lost");
+   sim.readFromPopulationFile("restart_slim_" + simID + ".txt");
+   setSeed(rdunif(1, 0, asInteger(2^62) - 1));
+   x = rdunif(1,0,99999);
+   target = sample(p3.genomes, 1, replace=F);
+   target.addNewDrawnMutation(m2, x);
+ }	
+}
+
+1999 late() {
+ m2mut = sim.mutationsOfType(m2);
+ freqs = sim.mutationFrequencies(p3,m2mut);
+ if(size(freqs) == 0){
+   sim.readFromPopulationFile("restart_slim_" + simID + ".txt");
+   setSeed(rdunif(1, 0, asInteger(2^62) - 1));
+   x = rdunif(1,0,99999);
+   target = sample(p3.genomes, 1, replace=F);
+   target.addNewDrawnMutation(m2, x);
+ }
+ else{
+  // with weaker selection, do 45-55% or 50-60
+  //if(freqs < 0.75 | freqs > 0.85){
+  if(freqs < 0.45 | freqs > 0.55){
+   print(freqs);
+   sim.readFromPopulationFile("restart_slim_" + simID + ".txt");
+   setSeed(rdunif(1, 0, asInteger(2^62) - 1));
+   x = rdunif(1,0,99999);
+   target = sample(p3.genomes, 1, replace=F);
+   target.addNewDrawnMutation(m2, x);
+ }
+}
+}
+
+2000 late()
+{
+  sim.deregisterScriptBlock(self);
+  sim.treeSeqOutput("ThreePopFix.trees");
+  sim.simulationFinished();
+}

@@ -1,0 +1,77 @@
+// this version stops without fixation to avoid long run times
+// terminate at 95 or 98% then use appropriate python script to only sample genotypes with mutations during recapitation. Genotypes with beneficial alleles are identified from "Terminal_Frequency " output file.
+// simulate soft sweeps with 100 or 200 initial beneficial mutations
+
+initialize() {
+ initializeTreeSeq();
+ initializeMutationRate(0);
+ //initializeMutationRate(1.22e-8);
+ //initializeMutationType("m1",1.0, "f", 0.0);
+ initializeMutationType("m2", 1.0, "f", 0.025);
+ initializeGenomicElementType("g1", m2, 1.0);
+ initializeGenomicElement(g1, 0, 99999);
+ initializeRecombinationRate(7.04e-8);
+ initializeGeneConversion(0.838, 518, 1.0);
+}
+
+1 early() {defineConstant("simID", getSeed());}
+1 early() { sim.addSubpop("p1", 2e+4); }
+1 early() { sim.addSubpopSplit("p2", 5e+3, p1); }
+
+1000 early() { 
+sim.addSubpopSplit("p3", 1e+4, p2); 
+p2.setSubpopulationSize(1e+4);
+}
+
+1000 late() {
+ //sim.outputFull("restart_slim_" + simID + ".txt");
+ sim.treeSeqOutput("restart_slim_" + simID + ".txt");
+ x = rdunif(1,0,99999);
+ //target = sample(p3.genomes, 1, replace=F);
+ target = sample(p3.genomes, 10, replace=F);
+ target.addNewDrawnMutation(m2, x);
+}
+
+1001:1999 late() {
+ m2mut = sim.mutationsOfType(m2);
+ freqs = sim.mutationFrequencies(p3, m2mut);
+ //print(freqs);
+ //tally = sum(sim.substitutions.mutationType == m2);
+ if(size(freqs) == 0){
+   //print("lost");
+   sim.readFromPopulationFile("restart_slim_" + simID + ".txt");
+   setSeed(rdunif(1, 0, asInteger(2^62) - 1));
+   x = rdunif(1,0,99999);
+   target = sample(p3.genomes, 10, replace=F);
+   target.addNewDrawnMutation(m2, x);
+ }	
+}
+
+2000 late() {
+ m2mut = sim.mutationsOfType(m2);
+ freqs = sim.mutationFrequencies(p3, m2mut);
+ print(freqs);
+ //if(any(freqs > 0.95 & freqs < 1))
+ if(any(freqs > 0.95)){
+  //cat(simID + ": FIXED\n");
+  sim.deregisterScriptBlock(self);
+  writeFile("Terminal_Frequency.txt",asString(freqs*20000));
+  sim.treeSeqOutput("ThreePopFix.trees");
+  sim.simulationFinished();
+  //sample1 = p1.sampleIndividuals(25).genomes;
+  //sample2 = p2.sampleIndividuals(25).genomes;
+  //sample3 = p3.sampleIndividuals(25).genomes;
+  //sampleGenomes = c(sample1, sample2, sample3);
+  //sampleGenomes.outputMS(filePath="MS123sweep.txt");
+ }
+ else
+ {
+ //cat(simID + " : NOT FIXED - RESTARTING\n");
+ sim.readFromPopulationFile("restart_slim_" + simID + ".txt");
+ setSeed(rdunif(1, 0, asInteger(2^62) - 1));
+ // re-introduce a sweep mutation
+ x = rdunif(1,0,99999);
+ target = sample(p3.genomes, 10, replace=F);
+ target.addNewDrawnMutation(m2, x);
+ }
+}

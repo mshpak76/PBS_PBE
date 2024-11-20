@@ -1,0 +1,83 @@
+// simulate selective sweep in focal population
+//50X rescaling of N and selection parameter
+// this version runs and restarts until terminal frequency of 0.95 or 0.98 is attained. During recapitation, only genotypes flagged with beneficial alleles are sampled based on Terminal_Frequency output file.
+// try to avert early loss with p0=0.001 initial beneficial alleles. Soft sweeps simulated with initial 200, 400 beneficial alleles
+
+initialize() {
+ initializeTreeSeq();
+ initializeMutationRate(0);
+ //initializeMutationRate(1.22e-8);
+ //initializeMutationType("m1",1.0, "f", 0.0);
+ //initializeMutationType("m2", 1.0, "f", 0.25);
+ //initializeMutationType("m2", 1.0, "f", 0.5);
+ //initializeMutationType("m2", 1.0, "f", 0.25);
+ initializeMutationType("m2", 1.0, "f", 0.05);
+ initializeGenomicElementType("g1", m2, 1.0);
+ initializeGenomicElement(g1, 0, 14999);
+ initializeRecombinationRate(3.67e-6);
+ // tract length 518 too long, see longest length that works
+ initializeGeneConversion(0.8515, 518, 1.0);
+}
+
+1 early() {defineConstant("simID", getSeed());}
+1 early() { sim.addSubpop("p1", 4e+4); }
+1 early() { sim.addSubpopSplit("p2", 1e+4, p1); }
+
+2000 early() {
+sim.treeSeqOutput("restart_slim_" + simID + ".txt"); 
+sim.addSubpopSplit("p3", 2e+4, p2);
+p2.setSubpopulationSize(2e+4);
+}
+
+2000 late() {
+ //sim.outputFull("restart_slim_" + simID + ".txt");
+ sim.treeSeqOutput("restart_slim_" + simID + ".txt");
+ x = rdunif(1,4999,9999);
+ target = sample(p3.genomes, 1, replace=F);
+ //target = sample(p3.genomes, 1, replace=F);
+ target.addNewDrawnMutation(m2, x);
+}
+
+2001:3999 late() {
+ m2mut = sim.mutationsOfType(m2);
+ freqs = sim.mutationFrequencies(p3, m2mut);
+ //print(freqs);
+ //tally = sum(sim.substitutions.mutationType == m2);
+ if(size(freqs) == 0){
+   //print("lost");
+   sim.readFromPopulationFile("restart_slim_" + simID + ".txt");
+   setSeed(rdunif(1, 0, asInteger(2^62) - 1));
+   x = rdunif(1,4999,9999);
+   target = sample(p3.genomes, 1, replace=F);
+   target.addNewDrawnMutation(m2, x);
+ }	
+}
+
+4000 late() {
+ m2mut = sim.mutationsOfType(m2);
+ freqs = sim.mutationFrequencies(p3, m2mut);
+ print(freqs);
+ //if(any(freqs > 0.95 & freqs < 1))
+ if(any(freqs > 0.98)){
+  //cat(simID + ": FIXED\n");
+  sim.deregisterScriptBlock(self);
+  writeFile("Terminal_Frequency.txt",asString(freqs*40000));
+  sim.treeSeqOutput("ThreePopFix.trees");
+  sim.simulationFinished();
+  //sample1 = p1.sampleIndividuals(25).genomes;
+  //sample2 = p2.sampleIndividuals(25).genomes;
+  //sample3 = p3.sampleIndividuals(25).genomes;
+  //sampleGenomes = c(sample1, sample2, sample3);
+  //sampleGenomes.outputMS(filePath="MS123sweep.txt");
+ }
+ else
+ {
+ //cat(simID + " : NOT FIXED - RESTARTING\n");
+ sim.readFromPopulationFile("restart_slim_" + simID + ".txt");
+ setSeed(rdunif(1, 0, asInteger(2^62) - 1));
+ // re-introduce a sweep mutation
+ x = rdunif(1,4999,9999);
+ target = sample(p3.genomes, 1, replace=F);
+ target.addNewDrawnMutation(m2, x);
+ }
+}

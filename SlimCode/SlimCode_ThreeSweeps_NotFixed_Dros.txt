@@ -1,0 +1,125 @@
+// three selective sweeps in large population model
+// mutations introduced at different sites in all three populations simultaneously
+// same selection pressures, different loci.
+// As with SlimCode_NotFixed_Dros.txt, there is a 50x population size rescaling
+// simulations are run to terminal frequency of 0.95 or 0.98 in the focal population. Output file Terminal_Frequecy stores frequencies of variant alleles so that they can identified and
+// sampled during recapitation, as with SlimCode_NotFixed code for single sweeps
+
+initialize() {
+ initializeTreeSeq();
+ initializeMutationRate(0);
+ //initializeMutationRate(1.22e-8);
+ //initializeMutationType("m1",1.0, "f", 0.0);
+ initializeMutationType("m2", 1.0, "f", 0.05);
+ initializeGenomicElementType("g1", m2, 1.0);
+ initializeGenomicElement(g1, 0, 14999);
+ initializeRecombinationRate(3.67e-6);
+ initializeGeneConversion(0.8515, 518, 1.0);
+}
+
+1 early() {defineConstant("simID", getSeed());}
+1 early() { sim.addSubpop("p1", 4e+4); }
+1 early() { sim.addSubpopSplit("p2", 1e+4, p1); }
+
+2000 early() {
+sim.treeSeqOutput("restart_slim_" + simID + ".txt"); 
+sim.addSubpopSplit("p3", 2e+4, p2);
+p2.setSubpopulationSize(2e+4);
+}
+
+// mutations with selective sweeps in all three subpopulations
+2000 late() {
+ //sim.outputFull("restart_slim_" + simID + ".txt");
+ sim.treeSeqOutput("restart_slim_" + simID + ".txt");
+ x1 = rdunif(1,4999,9999);
+ target1 = sample(p1.genomes, 10, replace=F);
+ target1.addNewDrawnMutation(m2, x1);
+ x2 = rdunif(1,4999,9999);
+ target2 = sample(p2.genomes, 10, replace=F);
+ target2.addNewDrawnMutation(m2, x2);
+ x3 = rdunif(1,4999,9999);
+ target3 = sample(p3.genomes, 10, replace=F);
+ target3.addNewDrawnMutation(m2, x3);
+}
+
+2001:3998 late() {
+ m2mut = sim.mutationsOfType(m2);
+ freq1 = sim.mutationFrequencies(p1,m2mut);
+ freq2 = sim.mutationFrequencies(p2,m2mut);
+ freq3 = sim.mutationFrequencies(p3,m2mut);
+ //print(freqs);
+ //tally = sum(sim.substitutions.mutationType == m2);
+ //print(freq1);
+ //print(freq2);
+ //print(freq3);
+ if(size(freq1) < 3 | size(freq2) < 3 | size(freq3) < 3){
+   //print("lost");
+   sim.readFromPopulationFile("restart_slim_" + simID + ".txt");
+   setSeed(rdunif(1, 0, asInteger(2^62) - 1));
+   x1 = rdunif(1,4999,9999);
+   target1 = sample(p1.genomes, 10, replace=F);
+   target1.addNewDrawnMutation(m2, x1);
+   x2 = rdunif(1,4999,9999);
+   target2 = sample(p2.genomes, 10, replace=F);
+   target2.addNewDrawnMutation(m2, x2);
+   x3 = rdunif(1,4999,9999);
+   target3 = sample(p3.genomes, 10, replace=F);
+   target3.addNewDrawnMutation(m2, x3);
+ }	
+}
+
+3999 late() {
+ m2mut = sim.mutationsOfType(m2);
+ freq1 = sim.mutationFrequencies(p1,m2mut);
+ freq2 = sim.mutationFrequencies(p2,m2mut);
+ freq3 = sim.mutationFrequencies(p3,m2mut);
+ //print(freq1);
+ //print(size(freq1));
+ //print(freq2);
+ //print(size(freq2));
+ //print(freq3);
+ //print(size(freq3));
+ //print("next");
+ if(size(freq1) < 3 | size(freq2) < 3 | size(freq3) < 3){
+   sim.readFromPopulationFile("restart_slim_" + simID + ".txt");
+   setSeed(rdunif(1, 0, asInteger(2^62) - 1));
+   x1 = rdunif(1,4999,9999);
+   target1 = sample(p1.genomes, 10, replace=F);
+   target1.addNewDrawnMutation(m2, x1);
+   x2 = rdunif(1,4999,9999);
+   target2 = sample(p2.genomes, 10, replace=F);
+   target2.addNewDrawnMutation(m2, x2);
+   x3 = rdunif(1,4999,9999);
+   target3 = sample(p3.genomes, 10, replace=F);
+   target3.addNewDrawnMutation(m2, x3);
+ }
+ else{
+  if(max(freq1) < 0.95 | max(freq2) < 0.95 | max(freq3) < 0.95){
+   sim.readFromPopulationFile("restart_slim_" + simID + ".txt");
+   setSeed(rdunif(1, 0, asInteger(2^62) - 1));
+   x1 = rdunif(1,4999,9999);
+   target1 = sample(p1.genomes, 10, replace=F);
+   target1.addNewDrawnMutation(m2, x1);
+   x2 = rdunif(1,4999,9999);
+   target2 = sample(p2.genomes, 10, replace=F);
+   target2.addNewDrawnMutation(m2, x2);
+   x3 = rdunif(1,4999,9999);
+   target3 = sample(p3.genomes, 10, replace=F);
+   target3.addNewDrawnMutation(m2, x3);
+ }
+}
+}
+
+4000 late()
+{
+  m2mut = sim.mutationsOfType(m2);
+  freq1 = sim.mutationFrequencies(p1,m2mut);
+  freq2 = sim.mutationFrequencies(p2,m2mut);
+  freq3 = sim.mutationFrequencies(p3,m2mut);
+  writeFile("Terminal_Frequency_1.txt",asString(freq1*80000));
+  writeFile("Terminal_Frequency_2.txt",asString(freq2*40000));
+  writeFile("Terminal_Frequency_3.txt",asString(freq3*40000));
+  sim.deregisterScriptBlock(self);
+  sim.treeSeqOutput("ThreePopFix.trees");
+  sim.simulationFinished();
+}

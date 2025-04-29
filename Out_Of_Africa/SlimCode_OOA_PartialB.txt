@@ -15,6 +15,8 @@
 
 // multiple all pop sizes by bval
 
+// partial sweep to 0.5 (0.45-0.5)
+
 
 initialize() {
  initializeTreeSeq();
@@ -63,17 +65,28 @@ mutationEffect(m2,p1) {return 1.0;}
  p3.setMigrationRates(p2, 9.6e-5);
 }
 
-4752 late(){
- x = rdunif(1,0,99999);
- target = sample(p2.genomes, 20, replace=F);
- target.addNewDrawnMutation(m2,x);
- sim.treeSeqOutput("restart_slim_" + simID + ".txt");
-}
-
 //fitness(m2,p3) {return 1.0;}
 mutationEffect(m2,p3) {return 1.0;}
 
-4753:5598 late(){
+4753:5300 late() {
+ newSize2 = asInteger(p2.individualCount * 1.004);
+ p2.setSubpopulationSize(newSize2);
+ newSize3 = asInteger(p2.individualCount * 1.0055);
+ p3.setSubpopulationSize(newSize3);
+}
+ 
+5301 late(){
+ x = rdunif(1,0,99999);
+ target = sample(p2.genomes, 1, replace=F);
+ target.addNewDrawnMutation(m2,x);
+ sim.treeSeqOutput("restart_slim_" + simID + ".txt");
+ newSize2 = asInteger(p2.individualCount * 1.004);
+ p2.setSubpopulationSize(newSize2);
+ newSize3 = asInteger(p2.individualCount * 1.0055);
+ p3.setSubpopulationSize(newSize3);
+}
+
+5302:5598 late(){
  newSize2 = asInteger(p2.individualCount * 1.004);
  p2.setSubpopulationSize(newSize2);
  newSize3 = asInteger(p2.individualCount * 1.0055);
@@ -101,9 +114,9 @@ mutationEffect(m2,p3) {return 1.0;}
    sim.readFromPopulationFile("restart_slim_" + simID + ".txt");
  }
  else{
-  //if(freqs < 0.45 | freqs > 0.55){
-  if(freqs < 0.95){
-   //print(freqs);
+  if(freqs < 0.45 | freqs > 0.55){
+  //if(freqs < 0.95){
+   print(freqs);
    sim.readFromPopulationFile("restart_slim_" + simID + ".txt");
  }
 }
@@ -117,4 +130,3 @@ mutationEffect(m2,p3) {return 1.0;}
   sim.treeSeqOutput("OutOfAfrica_FixB.trees");
   sim.simulationFinished();
 }
-

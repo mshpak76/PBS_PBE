@@ -22,6 +22,8 @@ initialize() {
  //initializeMutationRate(1.22e-8);
  //initializeMutationType("m1",1.0, "f", 0.0);
  initializeMutationType("m2", 1.0, "f", 0.03);
+ initializeMutationType("m1", 1.0, "f", 0.03);
+ initializeMutationType("m3", 1.0, "f", 0.03);
  initializeGenomicElementType("g1", m2, 1.0);
  initializeGenomicElement(g1, 0, 99999);
  initializeRecombinationRate(7.04e-8);
@@ -39,6 +41,13 @@ initialize() {
  defineConstant("bval",Bvals[pos]);
 }
 
+mutationEffect(m2,p1) {return 1.0;}
+mutationEffect(m2,p3) {return 1.0;}
+mutationEffect(m3,p1) {return 1.0;}
+mutationEffect(m3,p2) {return 1.0;}
+mutationEffect(m1,p2) {return 1.0;}
+mutationEffect(m1,p3) {return 1.0;}
+
 1 early() {defineConstant("simID", getSeed());}
 1 early() { sim.addSubpop("p1", asInteger(12300*bval)); }
 1 early() { 
@@ -50,7 +59,7 @@ initialize() {
 }
 
 //fitness(m2, p1) { return 1.0; }
-mutationEffect(m2,p1) {return 1.0;}
+//mutationEffect(m2,p1) {return 1.0;}
 
 4752 early() {
  sim.addSubpopSplit("p3", asInteger(510*bval), p2);
@@ -64,14 +73,19 @@ mutationEffect(m2,p1) {return 1.0;}
 }
 
 4752 late(){
- x = rdunif(1,0,99999);
- target = sample(p2.genomes, 20, replace=F);
- target.addNewDrawnMutation(m2,x);
+ x2 = rdunif(1,0,99999);
+ target2 = sample(p2.genomes, 20, replace=F);
+ target2.addNewDrawnMutation(m2,x2);
+ x1 = rdunif(1,0,99999);
+ target1 = sample(p1.genomes, 246, replace=F);
+ target1.addNewDrawnMutation(m1,x1);
+ x3 = rdunif(1,0,99999);
+ target3 = sample(p3.genomes, 12, replace=F);
+ target3.addNewDrawnMutation(m3,x3);
  sim.treeSeqOutput("restart_slim_" + simID + ".txt");
 }
 
-//fitness(m2,p3) {return 1.0;}
-mutationEffect(m2,p3) {return 1.0;}
+
 
 4753:5598 late(){
  newSize2 = asInteger(p2.individualCount * 1.004);
@@ -79,11 +93,14 @@ mutationEffect(m2,p3) {return 1.0;}
  newSize3 = asInteger(p2.individualCount * 1.0055);
  p3.setSubpopulationSize(newSize3);
  m2mut = sim.mutationsOfType(m2);
- freqs = sim.mutationFrequencies(p2, m2mut);
+ m1mut = sim.mutationsOfType(m1);
+ m3mut = sim.mutationsOfType(m3);
+ freq2 = sim.mutationFrequencies(p2,m2mut);
+ freq3 = sim.mutationFrequencies(p3,m3mut);
+ freq1 = sim.mutationFrequencies(p1,m1mut);
  //print(freqs);
  tally = sum(sim.substitutions.mutationType == m2);
- if(size(freqs) != 1){
-   //print(size(freqs));
+ if(size(freq2) != 1 | size(freq3)!=1 | size(freq1) !=1){
    //print("lost");
    sim.readFromPopulationFile("restart_slim_" + simID + ".txt");
  }	
@@ -96,25 +113,31 @@ mutationEffect(m2,p3) {return 1.0;}
  newSize3 = asInteger(p2.individualCount * 1.0055);
  p3.setSubpopulationSize(newSize3);
  m2mut = sim.mutationsOfType(m2);
- freqs = sim.mutationFrequencies(p2,m2mut);
- if(size(freqs) != 1){
+ m1mut = sim.mutationsOfType(m1);
+ m3mut = sim.mutationsOfType(m3);
+ freq2 = sim.mutationFrequencies(p2,m2mut);
+ freq3 = sim.mutationFrequencies(p3,m3mut);
+ freq1 = sim.mutationFrequencies(p1,m1mut);
+ if(size(freq2) != 1 | size(freq3)!=1 | size(freq1) !=1){
+   //print("lost");
    sim.readFromPopulationFile("restart_slim_" + simID + ".txt");
  }
  else{
-  //if(freqs < 0.45 | freqs > 0.55){
-  if(freqs < 0.95){
-   //print(freqs);
+  if(freq2 < 0.95 & freq3 < 0.95 & freq1 < 0.95){
+  //if(freqs < 0.95){
+   print(freq2);
+   print(freq3);
+   print(freq1);
    sim.readFromPopulationFile("restart_slim_" + simID + ".txt");
  }
 }
 }
-
 5600 late()
 {
   //sim.deregisterScriptBlock(self);
   community.deregisterScriptBlock(self);
   writeFile("Bval.txt",asString(bval));
-  sim.treeSeqOutput("OutOfAfrica_FixB.trees");
+  sim.treeSeqOutput("OutOfAfrica_Parallel.trees");
   sim.simulationFinished();
 }
 

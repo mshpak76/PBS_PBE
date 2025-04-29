@@ -1,0 +1,10 @@
+These script simulate a demographic history consistent with the parameter estimates in Gutenkunst et al (2009) for Eurasian
+"out of Africa" migrations.
+
+The slim scripts simulate local sweeps in focal population B (Europe) as well as parallel sweeps in all three populations
+(Africa, Europe, China). The python script "recapitation" simulates the linked neutral demographic history at the same
+locus using pyslim - with equivalent code for single and multiple sweeps apart from the names of input files.
+
+The MSPrime python script simulates the neutral evolutionary history at loci other than those under the selective sweep.
+This code samples from a random distriubtion of B multipliers for effective population size Ne to simulate the effects
+of background selection (BGS) in reducing neutral genetic diversity at these loci.
